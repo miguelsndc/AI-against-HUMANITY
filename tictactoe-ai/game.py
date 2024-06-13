@@ -8,6 +8,7 @@ font = pg.font.SysFont("Hack", 120)
 board = [["", "", ""], ["", "", ""], ["", "", ""]]
 IS_X_TURN = True
 move_count = 0
+announcing = False
 
 
 def draw_lines():
@@ -95,9 +96,9 @@ def play(x, y):
 
 
 def announce_result(result):
+    global announcing
     w = screen.get_width()
     h = screen.get_height()
-
     overlay = pg.Surface((w, h))
     overlay.set_alpha(128)
     overlay.fill((255, 255, 255))
@@ -112,7 +113,7 @@ def announce_result(result):
     )
 
     pg.display.flip()
-    pg.time.wait(2000)
+    pg.time.delay(2000)
     restart()
     pg.display.flip()
 
@@ -145,7 +146,7 @@ def evaluate():
     return None
 
 
-def minimax(depth, maximizing):
+def minimax(depth, maximizing, board_cp):
     global move_count
     score = evaluate()
     if score is not None:
@@ -155,11 +156,11 @@ def minimax(depth, maximizing):
         best_score = float("-inf")
         for i in range(3):
             for j in range(3):
-                if board[i][j] == "":
-                    board[i][j] = "O"
+                if board_cp[i][j] == "":
+                    board_cp[i][j] = "O"
                     move_count += 1
-                    score = minimax(depth + 1, False)
-                    board[i][j] = ""
+                    score = minimax(depth + 1, False, board_cp)
+                    board_cp[i][j] = ""
                     move_count -= 1
                     best_score = max(score, best_score)
         return best_score
@@ -167,11 +168,11 @@ def minimax(depth, maximizing):
         best_score = float("inf")
         for i in range(3):
             for j in range(3):
-                if board[i][j] == "":
-                    board[i][j] = "X"
+                if board_cp[i][j] == "":
+                    board_cp[i][j] = "X"
                     move_count += 1
-                    score = minimax(depth + 1, True)
-                    board[i][j] = ""
+                    score = minimax(depth + 1, True, board_cp)
+                    board_cp[i][j] = ""
                     move_count -= 1
                     best_score = min(score, best_score)
         return best_score
@@ -186,7 +187,7 @@ def find_best_move():
             if board[i][j] == "":
                 board[i][j] = "O"
                 move_count += 1
-                score = minimax(0, False)
+                score = minimax(0, False, board)
                 board[i][j] = ""
                 move_count -= 1
                 if score > best_score:
@@ -206,14 +207,23 @@ while running:
         if event.type == pg.QUIT:
             running = False
         elif event.type == pg.MOUSEBUTTONDOWN:
-            x, y = handle_click()
-            play(x, y)
-            render()
-            result = check_win()
-            if result is not None:
-                announce_result(result)
-                break
-            AI()
+            if IS_X_TURN:
+                x, y = handle_click()
+                play(x, y)
+                render()
+                result = check_win()
+                if result is not None:
+                    announce_result(result)
+                    break
+
+    if not IS_X_TURN:
+        AI()
+        render()
+        result = check_win()
+        if result is not None:
+            announce_result(result)
+            break
+
     render()
     clock.tick(30)
 
